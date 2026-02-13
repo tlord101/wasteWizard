@@ -1,0 +1,8 @@
+{
+  "name": "WasteWizard",
+  "description": "An intelligent waste management and recycling assistant featuring real-time interactive mapping, AI-powered waste identification, and localized recycling insights.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
