@@ -1,5 +1,8 @@
 
 import React, { useState } from 'react';
+import { auth, db } from '../services/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface VendorSignupProps {
   onSuccess: () => void;
@@ -8,19 +11,37 @@ interface VendorSignupProps {
 }
 
 const VendorSignup: React.FC<VendorSignupProps> = ({ onSuccess, onError, onBack }) => {
-  const [formData, setFormData] = useState({ name: '', vehicle: '', experience: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', vehicle: '', experience: '' });
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.vehicle) {
-      onError("Please provide your name and primary vehicle type.");
+    if (!formData.name || !formData.email || !formData.password || !formData.vehicle) {
+      onError("Please provide name, email, password, and primary vehicle type.");
       return;
     }
     
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    onSuccess();
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      await setDoc(doc(db, 'users', cred.user.uid), {
+        uid: cred.user.uid,
+        name: formData.name,
+        email: formData.email,
+        role: 'vendor',
+        vehicle: formData.vehicle,
+        experience: formData.experience || '',
+        onboarded: false,
+        approved: false,
+        isOnline: false,
+        createdAt: Date.now()
+      });
+      onSuccess();
+    } catch (err: any) {
+      onError(err.message || 'Registration failed.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,6 +71,28 @@ const VendorSignup: React.FC<VendorSignupProps> = ({ onSuccess, onError, onBack 
             placeholder="e.g. Silas Scrapper"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
+            className="w-full h-14 bg-neutral-900 border border-neutral-800 rounded-2xl px-6 text-white focus:border-amber-500 outline-none transition-all placeholder:text-neutral-700"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 ml-2">Email Address</label>
+          <input
+            type="email"
+            placeholder="silas@example.com"
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            className="w-full h-14 bg-neutral-900 border border-neutral-800 rounded-2xl px-6 text-white focus:border-amber-500 outline-none transition-all placeholder:text-neutral-700"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 ml-2">Secure Password</label>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={formData.password}
+            onChange={(e) => setFormData({...formData, password: e.target.value})}
             className="w-full h-14 bg-neutral-900 border border-neutral-800 rounded-2xl px-6 text-white focus:border-amber-500 outline-none transition-all placeholder:text-neutral-700"
           />
         </div>
